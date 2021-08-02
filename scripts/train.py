@@ -7,7 +7,7 @@ import data_prep
 
 EPOCHS = 30
 
-base_model = tf.keras.models.load_model("/home/pi/SpeakerRecognitionOnRPi/models/model_10_speakers_dropout.h5")
+base_model = tf.keras.models.load_model("/home/pi/SpeakerRecognitionOnRPi/models/base_models/model_10_speakers_dropout.h5")
 
 
 train_ds, valid_ds, test_ds = data_prep.create_datasets(data_prep.DATASET_AUDIO_PATH)

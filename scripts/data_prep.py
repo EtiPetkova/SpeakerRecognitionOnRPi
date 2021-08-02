@@ -8,17 +8,30 @@ from pathlib import Path
 from pydub import AudioSegment
 
 # Remove silence at audio start and end
+USERS = ["Eti", "Ben"] #this list needs to come from the collected data
 
-#TODO: Remove silence at audio start and end
-
+def remove_start_end_silence(path_in, path_out, format="wav"):
+    sound = AudioSegment.from_file(path_in, format=format)
+    non_sil_times = detect_nonsilent(sound, min_silence_len=50, silence_thresh=sound.dBFS * 1.5)
+    if len(non_sil_times) > 0:
+        non_sil_times_concat = [non_sil_times[0]]
+        if len(non_sil_times) > 1:
+            for t in non_sil_times[1:]:
+                if t[0] - non_sil_times_concat[-1][-1] < 200:
+                    non_sil_times_concat[-1][-1] = t[1]
+                else:
+                    non_sil_times_concat.append(t)
+        non_sil_times = [t for t in non_sil_times_concat if t[1] - t[0] > 350]
+        sound[non_sil_times[0][0]: non_sil_times[-1][1]].export(path_out, format='wav')
+    return 0
 
 # Split audio into 1 second wavs
 
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 DATASET_ROOT = "/home/pi/SpeakerRecognitionOnRPi/data/"
+RAW_AUDIO = "/home/pi/SpeakerRecognitionOnRPi/data/collected_audio/"
 
-def split_wav_into_one_second_wavs(input_wav_path):
-    output_location = os.path.splitext(input_wav_path)[0]
+def split_wav_into_one_second_wavs(input_wav_path, output_location):
     if not os.path.isdir(output_location):
         os.mkdir(output_location)
     basename = os.path.basename(input_wav_path)
@@ -30,8 +43,14 @@ def split_wav_into_one_second_wavs(input_wav_path):
         print(f"exporting {chunk_name}")
         chunk.export(chunk_name, format="wav")
 
+for user in USERS:
+    for f in os.listdir(f"{RAW_AUDIO}/{user}"):
+        filename = os.fsdecode(f)
+        if filename.endswith("_clean.wav"):
+            print("Processing: ", f"{RAW_AUDIO}/{user}/{filename}")
+            #remove_start_end_silence(f"{RAW_AUDIO}/{user}/{filename}", f"{RAW_AUDIO}/{user}/{filename.replace('.wav', '_clean.wav')}")
+            split_wav_into_one_second_wavs(f"{RAW_AUDIO}/{user}/{filename}", f"{DATASET_ROOT}/audio/{user}")
 
-#split_wav_into_one_second_wavs(f"{INPUT_FOLDER}/dean_bobo_recording.wav")
 
 AUDIO_SUBFOLDER = "audio"
 NOISE_SUBFOLDER = "noise"
@@ -104,7 +123,7 @@ os.system(command)
 def load_noise_sample(path):
     sample, sampling_rate = tf.audio.decode_wav(
         tf.io.read_file(path), desired_channels=1
-    )
+     )
     if sampling_rate == SAMPLING_RATE:
         # Number of slices of 16000 each that can be generated from the noise sample
         slices = int(sample.shape[0] / SAMPLING_RATE)
@@ -203,15 +222,13 @@ def create_datasets (original_dataset_path):
     rng = np.random.RandomState(SHUFFLE_SEED)
     rng.shuffle(labels)
 
-    # Split into training and validation
     num_val_samples = int(VALID_SPLIT * len(audio_paths))
     num_test_samples = int(TEST_SPLIT * len(audio_paths))
-    print("Using {} files for training.".format(len(audio_paths) - num_val_samples - num_test_samples))
-    train_audio_paths = audio_paths[:-(num_val_samples+num_test_samples)]
-    train_labels = labels[:-(num_val_samples + num_test_samples)]
+    print(f"Using {num_val_samples} for validation and {num_test_samples} for testing")
 
-    print("Using {} files for validation.".format(num_val_samples))
-    print("Using {} files for test.".format(num_test_samples))
+    train_audio_paths = audio_paths[:-(num_val_samples)]
+    train_labels = labels[:-(num_val_samples)]
+
     valid_audio_paths = audio_paths[-(num_val_samples + num_test_samples): -num_test_samples]
     valid_labels = labels[-(num_val_samples + num_test_samples): -num_test_samples]
 
