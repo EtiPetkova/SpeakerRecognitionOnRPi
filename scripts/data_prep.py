@@ -6,9 +6,9 @@ import numpy as np
 import tensorflow as tf
 from pathlib import Path
 from pydub import AudioSegment
+import constants
 
 # Remove silence at audio start and end
-USERS = ["Eti", "Ben"] #this list needs to come from the collected data
 
 def remove_start_end_silence(path_in, path_out, format="wav"):
     sound = AudioSegment.from_file(path_in, format=format)
@@ -28,8 +28,8 @@ def remove_start_end_silence(path_in, path_out, format="wav"):
 # Split audio into 1 second wavs
 
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
-DATASET_ROOT = "/home/pi/SpeakerRecognitionOnRPi/data/"
-RAW_AUDIO = "/home/pi/SpeakerRecognitionOnRPi/data/collected_audio/"
+DATASET_ROOT = constants.DATASET_ROOT
+RAW_AUDIO = constants.RAW_AUDIO
 
 def split_wav_into_one_second_wavs(input_wav_path, output_location):
     if not os.path.isdir(output_location):
@@ -43,108 +43,98 @@ def split_wav_into_one_second_wavs(input_wav_path, output_location):
         print(f"exporting {chunk_name}")
         chunk.export(chunk_name, format="wav")
 
-for user in USERS:
-    for f in os.listdir(f"{RAW_AUDIO}/{user}"):
-        filename = os.fsdecode(f)
-        if filename.endswith("_clean.wav"):
-            print("Processing: ", f"{RAW_AUDIO}/{user}/{filename}")
-            #remove_start_end_silence(f"{RAW_AUDIO}/{user}/{filename}", f"{RAW_AUDIO}/{user}/{filename.replace('.wav', '_clean.wav')}")
-            split_wav_into_one_second_wavs(f"{RAW_AUDIO}/{user}/{filename}", f"{DATASET_ROOT}/audio/{user}")
+def remove_silence_and_split_audio(user_names):
+    for user in user_names:
+        for f in os.listdir(f"{constants.RAW_AUDIO}/{user}"):
+            filename = os.fsdecode(f)
+            clean_filename = filename.replace(".wav", "_clean.wav")
+            remove_start_end_silence(f"{constants.RAW_AUDIO}/{user}/{filename}", f"{constants.RAW_AUDIO}/{user}/{clean_filename}")
+            print("Processing: ", f"{constants.RAW_AUDIO}/{user}/{clean_filename}")
+            split_wav_into_one_second_wavs(f"{constants.RAW_AUDIO}/{user}/{clean_filename}", f"{constants.DATASET_ROOT}/audio/{user}")
+    print("[SUCCESS] Data successfully split in to 1s wavs.")
+    return 0
 
 
-AUDIO_SUBFOLDER = "audio"
-NOISE_SUBFOLDER = "noise"
+AUDIO_SUBFOLDER = constants.AUDIO_SUBFOLDER
+NOISE_SUBFOLDER = constants.NOISE_SUBFOLDER
 
-DATASET_AUDIO_PATH = os.path.join(DATASET_ROOT, AUDIO_SUBFOLDER)
-print(DATASET_AUDIO_PATH)
-DATASET_NOISE_PATH = os.path.join(DATASET_ROOT, NOISE_SUBFOLDER)
-print(DATASET_NOISE_PATH)
+DATASET_AUDIO_PATH = constants.DATASET_AUDIO_PATH
+DATASET_NOISE_PATH = constants.DATASET_NOISE_PATH
 
-VALID_SPLIT = 0.1
-TEST_SPLIT = 0.1
-SHUFFLE_SEED = 43
-SAMPLING_RATE = 16000
-SCALE = 0.5
+VALID_SPLIT = constants.VALID_SPLIT
+TEST_SPLIT = constants.TEST_SPLIT
+SHUFFLE_SEED = constants.SEED
+SAMPLING_RATE = constants.SAMPLING_RATE
+SCALE = constants.SCALE
 
-BATCH_SIZE = 64
+BATCH_SIZE = constants.BATCH_SIZE
 
-if os.path.exists(DATASET_AUDIO_PATH) is False:
-  os.makedirs(DATASET_AUDIO_PATH)
+def process_noise():
+    if os.path.exists(DATASET_AUDIO_PATH) is False:
+        os.makedirs(DATASET_AUDIO_PATH)
 
-if os.path.exists(DATASET_NOISE_PATH) is False:
-  os.makedirs(DATASET_NOISE_PATH)
+    if os.path.exists(DATASET_NOISE_PATH) is False:
+        os.makedirs(DATASET_NOISE_PATH)
 
-for folder in os.listdir(DATASET_ROOT):
-  print ("Processing: ", folder)
-#  if os.path.isdir(os.path.join(DATASET_ROOT, folder)):
-#    if folder in [AUDIO_SUBFOLDER]:
-#      continue
-#    elif folder in ["other", "_background_noise_"]:
-#      shutil.move(
-#          os.path.join(DATASET_ROOT, folder),
-#          os.path.join(DATASET_NOISE_PATH, folder)
-#      )
-#    else:
-#      shutil.move(
-#          os.path.join(DATASET_ROOT, folder),
-#          os.path.join(DATASET_AUDIO_PATH, folder)
-#      )
+    for folder in os.listdir(constants.DATASET_ROOT):
+        print ("Processing: ", folder)
 
-noise_paths = []
-for subdir in os.listdir(DATASET_NOISE_PATH):
-  subdir_path = Path(DATASET_NOISE_PATH) / subdir
-  if os.path.isdir(subdir_path):
-    noise_paths += [
+    noise_paths = []
+    for subdir in os.listdir(DATASET_NOISE_PATH):
+        subdir_path = Path(DATASET_NOISE_PATH) / subdir
+        if os.path.isdir(subdir_path):
+            noise_paths += [
                     os.path.join(subdir_path, filepath)
                     for filepath in os.listdir(subdir_path)
                     if filepath.endswith(".wav")
-    ]
+            ]
 
-print(
-    "Found {} files belonging to {} directories".format(
-        len(noise_paths), len(os.listdir(DATASET_NOISE_PATH))
+    print(
+        "Found {} files belonging to {} directories".format(
+            len(noise_paths), len(os.listdir(DATASET_NOISE_PATH))
+        )
     )
-)
 
-command = (
-    "for dir in `ls -1 " + DATASET_NOISE_PATH + "`; do "
-    "for file in `ls -1 " + DATASET_NOISE_PATH + "/$dir/*.wav`; do "
-    "sample_rate=`ffprobe -hide_banner -loglevel panic -show_streams "
-    "$file | grep sample_rate | cut -f2 -d=`; "
-    "if [ $sample_rate -ne 16000 ]; then "
-    "ffmpeg -hide_banner -loglevel panic -y "
-    "-i $file -ar 16000 temp.wav; "
-    "mv temp.wav $file; "
-    "fi; done; done"
-)
-
-os.system(command)
-
-def load_noise_sample(path):
-    sample, sampling_rate = tf.audio.decode_wav(
-        tf.io.read_file(path), desired_channels=1
-     )
-    if sampling_rate == SAMPLING_RATE:
-        # Number of slices of 16000 each that can be generated from the noise sample
-        slices = int(sample.shape[0] / SAMPLING_RATE)
-        sample = tf.split(sample[: slices * SAMPLING_RATE], slices)
-        return sample
-    else:
-        print("Sampling rate for {} is incorrect. Ignoring it".format(path))
-        return None
-
-noises = []
-for path in noise_paths:
-  sample = load_noise_sample(path)
-  if sample:
-    noises.extend(sample)
-noises = tf.stack(noises)
-
-print(
-    "{} noise files were split into {} noise samples where each is {} sec. long".format(
-        len(noise_paths), noises.shape[0], noises.shape[1] // SAMPLING_RATE
+    command = (
+        "for dir in `ls -1 " + DATASET_NOISE_PATH + "`; do "
+        "for file in `ls -1 " + DATASET_NOISE_PATH + "/$dir/*.wav`; do "
+        "sample_rate=`ffprobe -hide_banner -loglevel panic -show_streams "
+        "$file | grep sample_rate | cut -f2 -d=`; "
+        "if [ $sample_rate -ne 16000 ]; then "
+        "ffmpeg -hide_banner -loglevel panic -y "
+        "-i $file -ar 16000 temp.wav; "
+        "mv temp.wav $file; "
+        "fi; done; done"
     )
-)
+
+    os.system(command)
+
+    def load_noise_sample(path):
+        sample, sampling_rate = tf.audio.decode_wav(
+            tf.io.read_file(path), desired_channels=1
+        )
+        if sampling_rate == SAMPLING_RATE:
+            # Number of slices of 16000 each that can be generated from the noise sample
+            slices = int(sample.shape[0] / SAMPLING_RATE)
+            sample = tf.split(sample[: slices * SAMPLING_RATE], slices)
+            return sample
+        else:
+            print("Sampling rate for {} is incorrect. Ignoring it".format(path))
+            return None
+
+    noises = []
+    for path in noise_paths:
+        sample = load_noise_sample(path)
+        if sample:
+            noises.extend(sample)
+    noises = tf.stack(noises)
+
+    print(
+        "{} noise files were split into {} noise samples where each is {} sec. long".format(
+            len(noise_paths), noises.shape[0], noises.shape[1] // SAMPLING_RATE
+        )
+    )
+    return noises
 
 def paths_and_labels_to_dataset(audio_paths, labels):
     """Constructs a dataset of audios and labels."""
@@ -203,6 +193,7 @@ def create_datasets (original_dataset_path):
     test_paths = []
     labels = []
     test_labels = []
+    noises = process_noise()
 
     for label, name in enumerate(class_names):
         print(f"Processing speaker {name}")

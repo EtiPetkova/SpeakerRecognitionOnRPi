@@ -9,6 +9,12 @@ import time
 
 FULL_AUDIO_LOCATION = '/home/pi/SpeakerRecognitionOnRPi/data/collected_audio/'
 SPLIT_AUDIO_LOCATION = '/home/pi/SpeakerRecognitionOnRPi/data/audio/'
+AUDIO_LONG_TERM_STORAGE = '/home/pi/SpeakerRecognitionOnRPi/data/storage/'
+
+shutil.rmtree(FULL_AUDIO_LOCATION)
+os.mkdir(FULL_AUDIO_LOCATION)
+shutil.rmtree(SPLIT_AUDIO_LOCATION)
+os.mkdir(SPLIT_AUDIO_LOCATION)
 
 def ask_about_the_number_of_users():
     num_users = input ("Hello! I am Bobo the vacuum cleaner. I am happy to meet you! How many people are there in your household?\n")
@@ -48,10 +54,11 @@ def collect_user_name_and_audio(num_users):
             print(f"Thanks {name} :) Your audio has been recorded successfully!")
         else:
             print(f"Oh sorry! Something went wrong when recording your audio!")
+    return user_names
 
 
         
 
-if __name__ == "__main__":
-    num_users = ask_about_the_number_of_users()
-    collect_user_name_and_audio(int(num_users))
+#if __name__ == "__main__":
+#    num_users = ask_about_the_number_of_users()
+#    collect_user_name_and_audio(int(num_users))
