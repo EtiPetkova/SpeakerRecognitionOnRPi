@@ -1,10 +1,9 @@
 import os
 import numpy as np
-
+import time
 import tensorflow as tf
 from pathlib import Path
 import constants
-import pipeline
 
 EPOCHS = constants.EPOCHS
 
@@ -55,8 +54,8 @@ def train_model(train_ds, valid_ds, test_ds):
     new_model.compile(
         optimizer="Adam", loss="sparse_categorical_crossentropy", metrics=["accuracy"]
     )
-
-    model_save_filename = "test_model.h5"
+    time_stamp = time.strftime("%Y%m%d-%H%M%S")
+    model_save_filename = f"speaker_recognizer_{len(class_names)}_speakers_{time_stamp}.h5"
     earlystopping_cb = tf.keras.callbacks.EarlyStopping(patience=20, restore_best_weights=True)
     mdlcheckpoint_cb = tf.keras.callbacks.ModelCheckpoint(model_save_filename, monitor="val_accuracy", save_best_only=True)
     lr_tuner = tf.keras.callbacks.ReduceLROnPlateau(monitor='val_loss', factor=0.1, patience=3, verbose=1, mode='auto', epsilon=0.0001, cooldown=0, min_lr=0.000001)
@@ -74,4 +73,4 @@ def train_model(train_ds, valid_ds, test_ds):
     print("Test accuracy")
     print(new_model.evaluate(test_ds))
     
-    return 0
+    return model_save_filename

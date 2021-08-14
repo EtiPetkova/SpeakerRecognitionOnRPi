@@ -1,25 +1,48 @@
+import constants
 import data_collection
 import data_prep
 import train
+import predict
+import pixels
+import time
+
 
 def run_pipeline():
-    print("Step 1: Establish the number of users")
+    leds = pixels.Pixels()
+    leds.wakeup()
+    time.sleep(1)
+    leds.off()
+    leds.wakeup()
+    time.sleep(1)
+    leds.off()
     num_users = data_collection.ask_about_the_number_of_users()
-    print("Step 2: Get user names and record audio")
-    user_names = data_collection.collect_user_name_and_audio(int(num_users))
-    print("USERS: ", user_names)
-    print("Step 3 data prep")
-    print("Remove silence and split audio")
-    remove_sil_and_split = data_prep.remove_silence_and_split_audio(user_names)
+    leds.wakeup()
+    leds.off()
+    leds.think()
+    user_names = data_collection.collect_user_name_and_audio(int(num_users), constants.RECORD_SECONDS_TRAINING)
+    remove_sil_and_split = data_prep.remove_silence_and_split_audio(user_names, constants.RAW_AUDIO)
     if remove_sil_and_split != 0:
         exit("[ERROR] Something went wrong in splitting the audio")
-    train_ds, valid_ds, test_ds = data_prep.create_datasets(data_prep.DATASET_AUDIO_PATH)
-    print("Step 4: Training")
-    training = train.train_model(train_ds, valid_ds, test_ds)
-    if training == 0:
-        print("I can recognise your voice now :)")
+    train_ds, valid_ds, test_ds = data_prep.create_datasets(data_prep.DATASET_AUDIO_PATH, constants.VALID_SPLIT, constants.TEST_SPLIT)
+    leds.off()
+    time.sleep(2)
+    leds.speak()
+    trained_model_filename = train.train_model(train_ds, valid_ds, test_ds)
+    leds.off()
+    if trained_model_filename:
+        leds.wakeup()
+        time.sleep(1)
+        print("\n\n###Bobo says: I can recognise your voices now :) Let's test this. Say Hey Bobo and I will guess who is talking to me :) \n\n")
+        leds.off()
     else:
-        print("Something went wrong...")
+        print("\n\n###Bobo says: Something went wrong... I wasn't able to learn :(\n\n")
+    for i in range(0, 4):
+        predicted_speaker = predict.predict(constants.PREDICTION_DATA_LOCATION, trained_model_filename, sorted(user_names))
+        leds.wakeup()
+        time.sleep(1)
+        print(f"\n\n ###Bobo says: Hi there {predicted_speaker}\n\n")
+        leds.off()
+    
 
 
 if __name__ == '__main__':

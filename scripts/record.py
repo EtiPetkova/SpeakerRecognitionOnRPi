@@ -7,10 +7,10 @@ RESPEAKER_WIDTH = 2
 # run getDeviceInfo.py to get index
 RESPEAKER_INDEX = 0  # refer to input device id
 CHUNK = 1024
-RECORD_SECONDS = 35
+#RECORD_SECONDS = 35
 #WAVE_OUTPUT_FILENAME = "output.wav"
 
-def record_audio(WAVE_OUTPUT_FILENAME):
+def record_audio(WAVE_OUTPUT_FILENAME, RECORD_SECONDS):
     p = pyaudio.PyAudio()
 
     stream = p.open(

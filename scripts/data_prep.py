@@ -43,14 +43,14 @@ def split_wav_into_one_second_wavs(input_wav_path, output_location):
         print(f"exporting {chunk_name}")
         chunk.export(chunk_name, format="wav")
 
-def remove_silence_and_split_audio(user_names):
+def remove_silence_and_split_audio(user_names, input_location):
     for user in user_names:
-        for f in os.listdir(f"{constants.RAW_AUDIO}/{user}"):
+        for f in os.listdir(f"{input_location}/{user}"):
             filename = os.fsdecode(f)
             clean_filename = filename.replace(".wav", "_clean.wav")
-            remove_start_end_silence(f"{constants.RAW_AUDIO}/{user}/{filename}", f"{constants.RAW_AUDIO}/{user}/{clean_filename}")
-            print("Processing: ", f"{constants.RAW_AUDIO}/{user}/{clean_filename}")
-            split_wav_into_one_second_wavs(f"{constants.RAW_AUDIO}/{user}/{clean_filename}", f"{constants.DATASET_ROOT}/audio/{user}")
+            remove_start_end_silence(f"{input_location}/{user}/{filename}", f"{input_location}/{user}/{clean_filename}")
+            print("Processing: ", f"{input_location}/{user}/{clean_filename}")
+            split_wav_into_one_second_wavs(f"{input_location}/{user}/{clean_filename}", f"{constants.DATASET_ROOT}/audio/{user}")
     print("[SUCCESS] Data successfully split in to 1s wavs.")
     return 0
 
@@ -185,7 +185,7 @@ def audio_to_fft(audio):
     # which represents the positive frequencies
     return tf.math.abs(fft[:, : (audio.shape[1] // 2), :])
 
-def create_datasets (original_dataset_path):
+def create_datasets (original_dataset_path, VALID_SPLIT, TEST_SPLIT):
     print("Creating datasets . . .")
     class_names = os.listdir(DATASET_AUDIO_PATH)
     print(f"Class names {class_names}")
