@@ -22,3 +22,4 @@ It performs these sequence of steps:
 - Model training - a speaker recognition model with pre-defined architecture and parameters is trained for 15 epochs.
 - The script does real time testing: the scripts asks the user(s) to say something to the RPi and prints a greeting with
 the predicted user's name. It does this 4 times.
+- The trained model is saved as an h5 file in the `scripts` folder. The model filename contains a timestamp for easy identification.
