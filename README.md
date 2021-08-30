@@ -21,7 +21,7 @@ This script gives the user instructions on the screen.
 It performs this sequence of steps:
 - Data collection - the script gives the user a short text which they are asked to read and records them for 35 seconds.
 - Data processing - the collected data is processed to be compatible with the model's input requirements
-- Model training - a speaker recognition model with pre-defined architecture and parameters is trained for 20 epochs.
+- Model training - a speaker recognition model with pre-defined architecture and parameters is trained for 100 epochs.
 - The script does real time testing: the scripts asks the user(s) to say something to the RPi and prints a greeting with
 the predicted user's name. It does this 4 times.
 - The trained model is saved as an h5 file in the `scripts` folder. The model filename contains a timestamp for easy identification.
