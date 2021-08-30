@@ -7,7 +7,6 @@ import shutil
 from pathlib import Path
 
 PREDICTION_DATA_LOCATION = "/home/pi/SpeakerRecognitionOnRPi/data/audio_for_predictions/"
-MODEL = "speaker_recognizer_2_speakers_20210814-225044.h5"
 
 def predict(PREDICTION_DATA_LOCATION, trained_model, classes):
    model = keras.models.load_model(trained_model)

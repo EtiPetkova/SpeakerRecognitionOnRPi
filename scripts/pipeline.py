@@ -22,6 +22,7 @@ def run_pipeline():
     leds.think()
     user_names = data_collection.collect_user_name_and_audio(int(num_users), constants.RECORD_SECONDS_TRAINING)
     remove_sil_and_split = data_prep.remove_silence_and_split_audio(user_names, constants.RAW_AUDIO)
+    user_names.append("Unknown")
     if remove_sil_and_split != 0:
         exit("[ERROR] Something went wrong in splitting the audio")
     train_ds, valid_ds, test_ds = data_prep.create_datasets(data_prep.DATASET_AUDIO_PATH, constants.VALID_SPLIT, constants.TEST_SPLIT)

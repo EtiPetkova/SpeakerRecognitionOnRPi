@@ -8,17 +8,25 @@ import record
 import pixels
 import time
 import io
+import time
 from contextlib import redirect_stdout, redirect_stderr
 from termcolor import colored
+from distutils.dir_util import copy_tree
 
+time_stamp = time.strftime("%Y%m%d-%H%M%S")
 FULL_AUDIO_LOCATION = constants.FULL_AUDIO_LOCATION
 SPLIT_AUDIO_LOCATION = constants.SPLIT_AUDIO_LOCATION
 AUDIO_LONG_TERM_STORAGE = '/home/pi/SpeakerRecognitionOnRPi/data/storage/'
+UNKNOWN_CLASS_AUDIO_LOCATION = '/home/pi/SpeakerRecognitionOnRPi/data/storage/Unknown/'
 
 shutil.rmtree(FULL_AUDIO_LOCATION)
 os.mkdir(FULL_AUDIO_LOCATION)
 shutil.rmtree(SPLIT_AUDIO_LOCATION)
 os.mkdir(SPLIT_AUDIO_LOCATION)
+#Add the prepared data for the Unknown class to the SPLIT_AUDIO_LOCATION
+os.mkdir(f"{SPLIT_AUDIO_LOCATION}/Unknown")
+copy_tree(UNKNOWN_CLASS_AUDIO_LOCATION, f"{SPLIT_AUDIO_LOCATION}/Unknown/")
+
 
 def ask_about_the_number_of_users():
     num_users = input (colored("""\n\n### Bobo says: Hello! I am Bobo the vacuum cleaner. 
@@ -52,5 +60,7 @@ def collect_user_name_and_audio(num_users, record_seconds):
             print(colored(f"\n\n### Bobo says: Thanks {name} :) Your audio has been recorded successfully!\n\n", "yellow", attrs=["bold"]))
         else:
             print(colored(f"\n\n### Bobo says: Oh sorry! Something went wrong when recording your audio!\n\n", "yellow", attrs=["bold"]))
+    #copy recording to the storage directory
+    shutil.copyfile(full_recording_filename, f"{AUDIO_LONG_TERM_STORAGE}/{name}_recording_{time_stamp}.wav")
     return user_names
 
