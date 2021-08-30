@@ -23,3 +23,5 @@ It performs these sequence of steps:
 - The script does real time testing: the scripts asks the user(s) to say something to the RPi and prints a greeting with
 the predicted user's name. It does this 4 times.
 - The trained model is saved as an h5 file in the `scripts` folder. The model filename contains a timestamp for easy identification.
+
+Project Paper: https://drive.google.com/file/d/1bdu-ovMm4BUT_BK6bRo4N47xcoCs2SZ-/view?usp=sharing
