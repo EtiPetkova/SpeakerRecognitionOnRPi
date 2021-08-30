@@ -4,6 +4,7 @@ import time
 import tensorflow as tf
 from pathlib import Path
 import constants
+from termcolor import colored
 
 EPOCHS = constants.EPOCHS
 
@@ -41,7 +42,7 @@ def train_model(train_ds, valid_ds, test_ds):
         return tf.keras.models.Model(inputs=inputs, outputs=outputs)
 
     class_names = os.listdir(constants.DATASET_AUDIO_PATH)
-    print("CLASS NAMES: ", class_names)
+    print(colored(f"CLASS NAMES: {class_names}", "cyan", attrs=["bold"]))
     new_model = build_model((constants.SAMPLING_RATE // 2, 1), len(set(class_names)))
     new_model.summary()
 
@@ -68,9 +69,9 @@ def train_model(train_ds, valid_ds, test_ds):
     )
 
     #Evaluation
-    print("Validation accuracy")
+    print(colored("Validation accuracy", "cyan", attrs=["bold"]))
     print(new_model.evaluate(valid_ds))
-    print("Test accuracy")
+    print(colored("Test accuracy", "cyan", attrs=["bold"]))
     print(new_model.evaluate(test_ds))
     
     return model_save_filename

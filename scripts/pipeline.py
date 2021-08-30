@@ -5,6 +5,7 @@ import train
 import predict
 import pixels
 import time
+from termcolor import colored
 
 
 def run_pipeline():
@@ -32,15 +33,15 @@ def run_pipeline():
     if trained_model_filename:
         leds.wakeup()
         time.sleep(1)
-        print("\n\n###Bobo says: I can recognise your voices now :) Let's test this. Say Hey Bobo and I will guess who is talking to me :) \n\n")
+        print(colored("\n\n###Bobo says: I can recognise your voices now :) Let's test this. Say Hey Bobo and I will guess who is talking to me :) \n\n", "yellow", attrs=["bold"]))
         leds.off()
     else:
-        print("\n\n###Bobo says: Something went wrong... I wasn't able to learn :(\n\n")
+        print(colored("\n\n###Bobo says: Something went wrong... I wasn't able to learn :(\n\n", "yellow", attrs=["bold"]))
     for i in range(0, 4):
         predicted_speaker = predict.predict(constants.PREDICTION_DATA_LOCATION, trained_model_filename, sorted(user_names))
         leds.wakeup()
         time.sleep(1)
-        print(f"\n\n ###Bobo says: Hi there {predicted_speaker}\n\n")
+        print(colored(f"\n\n ###Bobo says: Hi there {predicted_speaker}\n\n", "yellow", attrs=["bold"]))
         leds.off()
     
 

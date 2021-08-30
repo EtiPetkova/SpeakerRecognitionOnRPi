@@ -7,6 +7,7 @@ import tensorflow as tf
 from pathlib import Path
 from pydub import AudioSegment
 import constants
+from termcolor import colored
 
 # Remove silence at audio start and end
 
@@ -40,7 +41,7 @@ def split_wav_into_one_second_wavs(input_wav_path, output_location):
     chunks = make_chunks(myaudio, chunk_length_ms)
     for i, chunk in enumerate(chunks):
         chunk_name = f"{output_location}/{os.path.splitext(basename)[0]}_{i}.wav"
-        print(f"exporting {chunk_name}")
+        print(colored(f"exporting {chunk_name}", "cyan", attrs=["bold"]))
         chunk.export(chunk_name, format="wav")
 
 def remove_silence_and_split_audio(user_names, input_location):
@@ -49,9 +50,9 @@ def remove_silence_and_split_audio(user_names, input_location):
             filename = os.fsdecode(f)
             clean_filename = filename.replace(".wav", "_clean.wav")
             remove_start_end_silence(f"{input_location}/{user}/{filename}", f"{input_location}/{user}/{clean_filename}")
-            print("Processing: ", f"{input_location}/{user}/{clean_filename}")
+            print(colored(f"Processing: {input_location}/{user}/{clean_filename}", "cyan", attrs=["bold"]))
             split_wav_into_one_second_wavs(f"{input_location}/{user}/{clean_filename}", f"{constants.DATASET_ROOT}/audio/{user}")
-    print("[SUCCESS] Data successfully split in to 1s wavs.")
+    print(colored("[SUCCESS] Data successfully split in to 1s wavs.", "cyan", attrs=["bold"]))
     return 0
 
 
@@ -77,7 +78,7 @@ def process_noise():
         os.makedirs(DATASET_NOISE_PATH)
 
     for folder in os.listdir(constants.DATASET_ROOT):
-        print ("Processing: ", folder)
+        print (colored(f"Processing: {folder}", "cyan" , attrs=["bold"]))
 
     noise_paths = []
     for subdir in os.listdir(DATASET_NOISE_PATH):
@@ -90,10 +91,9 @@ def process_noise():
             ]
 
     print(
-        "Found {} files belonging to {} directories".format(
-            len(noise_paths), len(os.listdir(DATASET_NOISE_PATH))
+        colored("Found {} files belonging to {} directories".format(
+            len(noise_paths), len(os.listdir(DATASET_NOISE_PATH))), "cyan", attrs=["bold"])
         )
-    )
 
     command = (
         "for dir in `ls -1 " + DATASET_NOISE_PATH + "`; do "
@@ -119,7 +119,7 @@ def process_noise():
             sample = tf.split(sample[: slices * SAMPLING_RATE], slices)
             return sample
         else:
-            print("Sampling rate for {} is incorrect. Ignoring it".format(path))
+            print(colored("Sampling rate for {} is incorrect. Ignoring it".format(path)), "cyan", attrs=["bold"])
             return None
 
     noises = []
@@ -130,9 +130,9 @@ def process_noise():
     noises = tf.stack(noises)
 
     print(
-        "{} noise files were split into {} noise samples where each is {} sec. long".format(
+        colored("{} noise files were split into {} noise samples where each is {} sec. long".format(
             len(noise_paths), noises.shape[0], noises.shape[1] // SAMPLING_RATE
-        )
+        ), "cyan", attrs=["bold"])
     )
     return noises
 
@@ -152,7 +152,7 @@ def path_to_audio(path):
 
 
 def add_noise(audio, noises=None, scale=0.5):
-    print("Add noise start shape audio: ", audio)
+    print(colored(f"Add noise start shape audio: {audio}", "cyan", attrs=["bold"]))
     if noises is not None:
         # Create a random tensor of the same size as audio ranging from
         # 0 to the number of noise stream samples that we have.
@@ -167,7 +167,7 @@ def add_noise(audio, noises=None, scale=0.5):
 
         # Adding the rescaled noise to audio
         audio = audio + noise * prop * scale
-    print("Add noise end shape audio: ", audio)
+    print(colored(f"Add noise end shape audio: {audio}", "cyan", attrs=["bold"]))
     return audio
 
 
@@ -186,9 +186,9 @@ def audio_to_fft(audio):
     return tf.math.abs(fft[:, : (audio.shape[1] // 2), :])
 
 def create_datasets (original_dataset_path, VALID_SPLIT, TEST_SPLIT):
-    print("Creating datasets . . .")
+    print(colored("Creating datasets . . .", "cyan", attrs=["bold"]))
     class_names = os.listdir(DATASET_AUDIO_PATH)
-    print(f"Class names {class_names}")
+    print(colored(f"Class names {class_names}", "cyan", attrs=["bold"]))
     audio_paths = []
     test_paths = []
     labels = []
@@ -196,7 +196,7 @@ def create_datasets (original_dataset_path, VALID_SPLIT, TEST_SPLIT):
     noises = process_noise()
 
     for label, name in enumerate(class_names):
-        print(f"Processing speaker {name}")
+        print(colored(f"Processing speaker {name}", "cyan", attrs=["bold"]))
         dir_path = Path(DATASET_AUDIO_PATH) / name
         speaker_sample_paths = [
                           os.path.join(dir_path, filepath)
@@ -205,7 +205,7 @@ def create_datasets (original_dataset_path, VALID_SPLIT, TEST_SPLIT):
         ]
         audio_paths += speaker_sample_paths
         labels += [label] * len(speaker_sample_paths)
-    print(f"Found {len(audio_paths)} files belonging to {len(set(labels))} classes")
+    print(colored(f"Found {len(audio_paths)} files belonging to {len(set(labels))} classes", "cyan", attrs=["bold"]))
 
     # Shuffle
     rng = np.random.RandomState(SHUFFLE_SEED)
@@ -215,7 +215,7 @@ def create_datasets (original_dataset_path, VALID_SPLIT, TEST_SPLIT):
 
     num_val_samples = int(VALID_SPLIT * len(audio_paths))
     num_test_samples = int(TEST_SPLIT * len(audio_paths))
-    print(f"Using {num_val_samples} for validation and {num_test_samples} for testing")
+    print(colored(f"Using {num_val_samples} for validation and {num_test_samples} for testing", "cyan", attrs=["bold"]))
 
     train_audio_paths = audio_paths[:-(num_val_samples)]
     train_labels = labels[:-(num_val_samples)]
@@ -261,6 +261,6 @@ def create_datasets (original_dataset_path, VALID_SPLIT, TEST_SPLIT):
     )
     test_ds = test_ds.prefetch(tf.data.experimental.AUTOTUNE)
 
-    print("DONE")
+    print(colored("DONE", "cyan", attrs=["bold"]))
     return(train_ds, valid_ds, test_ds)
 
